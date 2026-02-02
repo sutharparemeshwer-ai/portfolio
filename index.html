@@ -821,28 +821,45 @@
                         </svg> <span>Live Demo</span></a>
                 </div>
             </div>
+
+            <!-- Arch 5: ARTIST PORTFOLIO -->
+            <div class="arch__info" id="purple-arch">
+                <div class="content">
+                    <h2 class="header">ARTIST PORTFOLIO</h2>
+                    <p class="desc">A professional artist portfolio built with React, featuring a beautiful UI and smooth user experience to showcase creative works.</p>
+                    <a class="link" href="#" style="background-color: #DDA0DD">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none">
+                            <path fill="#121212" d="M5 2c0 1.105-1.895 2-3 2a2 2 0 1 1 0-4c1.105 0 3 .895 3 2ZM11 3.5c0 1.105-.895 3-2 3s-2-1.895-2-3a2 2 0 1 1 4 0ZM6 9a2 2 0 1 1-4 0c0-1.105.895-3 2-3s2 1.895 2 3Z" />
+                        </svg> <span>Live Demo</span></a>
+                </div>
+            </div>
         </div>
 
         <!-- RIGHT COLUMN: Pinned Images -->
         <div class="arch__right">
-            <!-- data-index="4" (Maps to OUR STORY) - User's Image 1 -->
-            <div class="img-wrapper" data-index="4">
+            <!-- data-index="5" (Maps to TRIOTECH) -->
+            <div class="img-wrapper" data-index="5">
                 <img src="assets/triotech.png" alt="Legacy team members collaboration">
             </div>
 
-            <!-- data-index="3" (Maps to OUR MISSION) - User's Image 2 -->
-            <div class="img-wrapper" data-index="3">
+            <!-- data-index="4" (Maps to TOOLVERS) -->
+            <div class="img-wrapper" data-index="4">
                 <img src="assets/tollvers.png" alt="Executive management team meeting">
             </div>
 
-            <!-- data-index="2" (Maps to Innovative Solutions) - User's Image 3 (KEPT) -->
-            <div class="img-wrapper" data-index="2">
+            <!-- data-index="3" (Maps to ZOMATO) -->
+            <div class="img-wrapper" data-index="3">
                 <img src="assets/zomato.png" alt="Abstract fluid architecture design">
             </div>
 
-            <!-- data-index="1" (Maps to Comprehensive Overview) - User's Image 4 -->
-            <div class="img-wrapper" data-index="1">
+            <!-- data-index="2" (Maps to FAMILY TREE) -->
+            <div class="img-wrapper" data-index="2">
                 <img src="assets/family tree .png" alt="Family Tree Project Screenshot">
+            </div>
+
+            <!-- data-index="1" (Maps to ARTIST PORTFOLIO) -->
+            <div class="img-wrapper" data-index="1">
+                <img src="assets/portfolio.png" alt="Artist Portfolio Project Screenshot">
             </div>
         </div>
     </div>
@@ -1158,9 +1175,9 @@
 
     const imgs = gsap.utils.toArray(".img-wrapper img");
     // Background colors for the body corresponding to each section (starts with #f9ffe7 - green theme)
-    // Transition colors: Section 1->2, 2->3, 3->4
-    // Changed the last color (index 2) to pure white (#FFFFFF) for the 4th section.
-    const bgColors = ["#EDF9FF", "#FFECF2", "#FFFFFF"];
+    // Transition colors: Section 1->2, 2->3, 3->4, 4->5
+    // Added #F3E5F5 for the transition to the 5th section.
+    const bgColors = ["#EDF9FF", "#FFECF2", "#FFFFFF", "#F3E5F5"];
 
     // GSAP Animation with Media Query matching
     ScrollTrigger.matchMedia({
