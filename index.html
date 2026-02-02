@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-dev</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Load Iconify for vector icons -->
+    <script src="https://code.iconify.design/1/1.0.7/iconify.min.js"></script>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP Core --><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- GSAP ScrollTrigger Plugin --><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- GSAP ScrollSmoother Plugin (for smooth scrolling effect) --><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollSmoother.min.js"></script>
+    <!-- Use Inter font family -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1a1a1a;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-green': '#059669', // Emerald 600
+                        'dark-text': '#1f2937', // Gray 800
+                        'light-text': '#4b5563', // Gray 600
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Define a custom font family and variables */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght @100;400;700&display=swap');
+
+        :root {
+            --color-black: hsla(0, 0%, 12%, 100%);
+            --color-white: hsla(0, 0%, 100%, 100%);
+            /* The perspective value is crucial for the 3D effect. Using 100svh ensures it scales nicely with the viewport height. */
+            --perspective-distance: 100svh;
+        }
+
+        body {
+            background-color: var(--color-white); /* Changed to white */
+            color: var(--color-black); /* Changed to black for contrast */
+            font-family: "Roboto", sans-serif;
+            font-optical-sizing: auto;
+            margin: 0;
+            /* Hide the default horizontal scrollbar that can sometimes appear with 3D transforms */
+            overflow-x: hidden;
+        }
+
+        /* --- Scroll Smoother Root Container --- */
+        #smooth-wrapper {
+            /* This is required by ScrollSmoother */
+            width: 100%;
+        }
+        #smooth-content {
+            /* This is required by ScrollSmoother */
+        }
+
+        /* Utility function emulation in plain CSS */
+        .rem-100 { margin-top: 6.25rem; margin-bottom: 6.25rem; } /* 100px / 16 = 6.25rem */
+
+        .heading {
+            /* Responsive font size and line height using clamp() */
+            font-size: clamp(3.125rem, 3.464vw + 2.229rem, 5rem);
+            line-height: clamp(4.688rem, 3.349vw + 3.821rem, 6.5rem);
+            text-align: center;
+            
+            /* Initial state before scroll (hidden deep in 3D space) */
+            opacity: 0.1;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            /* The initial Z translation pushes the element far away, simulating depth */
+            transform: translate3d(-50%, -50%, -2000px);
+            white-space: nowrap;
+            /* Ensure the heading is above the images initially */
+            z-index: 5;
+            color: var(--color-black); /* Ensure heading text is black */
+        }
+
+        .zoom-container {
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            /* This is the key CSS property that enables the 3D perspective effect */
+            perspective: var(--perspective-distance);
+            width: 100vw;
+        }
+
+        .zoom-item {
+            position: absolute;
+            transform-origin: center center;
+            /* Initial state for all items: slightly transparent and in 3D space, which will be overwritten by GSAP */
+            opacity: 0;
+            /* This prevents the images from getting clipped by the container before the animation starts */
+            z-index: 10;
+        }
+
+        /* Specific opacity and Z-index for the layer groups before GSAP takes over */
+        .zoom-item[data-layer="3"] { opacity: 0.6; z-index: 3; }
+        .zoom-item[data-layer="2"] { opacity: 0.4; z-index: 2; }
+        .zoom-item[data-layer="1"] { opacity: 0.2; z-index: 1; }
+
+        /* Positioning and sizing of individual images using viewport units for responsiveness */
+        .zoom-item:nth-child(2) { left: 15vw; top: 21%; width: 11.5vw; }
+        .zoom-item:nth-child(3) { left: 29%; top: 15%; width: 9.2vw; }
+        .zoom-item:nth-child(4) { left: 36%; top: 3%; width: 11.5vw; }
+        .zoom-item:nth-child(5) { right: 30%; top: 11%; width: 7.6vw; }
+        .zoom-item:nth-child(6) { bottom: auto; right: 7%; top: 28%; width: 13.2vw; }
+        .zoom-item:nth-child(7) { bottom: 32%; right: 3.5%; width: 4.7vw; }
+        .zoom-item:nth-child(8) { bottom: 13.5%; left: 16%; width: 10.5vw; }
+        .zoom-item:nth-child(9) { bottom: 24%; left: 29%; width: 5.9vw; }
+        .zoom-item:nth-child(10) { bottom: 46%; left: 7.5%; top: auto; width: 5.2vw; }
+        .zoom-item:nth-child(11) { bottom: 5.5%; right: 15%; width: 15vw; }
+        .zoom-item:nth-child(12) { bottom: 10.5%; left: auto; right: 38%; width: 8.3vw; }
+        .zoom-item:nth-child(13) { right: 4%; top: 5%; width: 6.1vw; }
+        
+        /* Ensure images inside the zoom items fill their container */
+        .zoom-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.5rem; /* Added rounded corners for aesthetics */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); /* Added subtle shadow */
+        }
+        
+        /* Style for manually split characters */
+        .opacity-reveal span {
+            display: inline-block; /* Crucial for stagger animation */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;800&display=swap" rel="stylesheet">
+    <style>
+        /* Initial Body Setup */
+        body {
+            color: #121212;
+            font-family: "Outfit", sans-serif;
+            background-color: #ffffff; /* Initial background color */
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Container and Spacing */
+        .container {
+            max-width: 1440px;
+            padding: 2rem;
+            margin-inline: auto;
+        }
+
+        .spacer {
+            width: 100%;
+            height: 30vh;
+        }
+
+        /* Main Architecture Section */
+        .arch {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+            max-width: 1100px;
+            margin-inline: auto;
+        }
+
+        /* Left Content Column (Scrollable) */
+        .arch__left {
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+        }
+        
+        .arch__left .arch__info {
+            max-width: 356px;
+            height: 100vh;
+            display: grid;
+            place-items: center;
+        }
+
+        .arch__left .arch__info .content {
+            /* Ensures content is centered vertically */
+        }
+
+        .arch__left .arch__info h2.header {
+            font-family: Outfit;
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -0.84px;
+        }
+
+        .arch__left .arch__info p.desc {
+            color: rgba(18, 18, 18, 0.8);
+            font-size: 18px;
+            letter-spacing: -0.54px;
+            margin-block: 6px 28px;
+            line-height: normal;
+        }
+
+        .arch__left .arch__info a.link {
+            text-decoration: none;
+            padding: 16px 18px;
+            color: #121212; /* Explicitly set text color to black */
+            border-radius: 40px;
+            display: flex;
+            gap: 4px;
+            width: fit-content;
+            align-items: center;
+            font-weight: 700;
+            transition: transform 0.2s;
+        }
+
+        .arch__left .arch__info a.link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Right Image Column (Pinned) */
+        .arch__right {
+            flex-shrink: 1;
+            height: 100vh;
+            width: 100%;
+            max-width: 540px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .arch__right .img-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            height: 400px;
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .arch__right .img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        
+        /* Initial state for clipPath animation (set in JS, but defined here for visual clarity) */
+        .arch__right .img-wrapper:not([data-index="1"]) img {
+            clip-path: inset(0px 0px 100%);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 900px) {
+            .arch {
+                gap: 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .arch {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            /* Display contents allows for reordering of children */
+            .arch__left,
+            .arch__right {
+                display: contents;
+            }
+
+            .arch__right {
+                height: auto;
+                max-width: 100%;
+            }
+
+            /* On mobile, images stack naturally (position: static) */
+            .arch__right .img-wrapper {
+                position: static;
+                transform: none;
+                height: 360px;
+                width: 100%;
+                margin-bottom: 20px;
+                clip-path: none !important; /* Disable clipPath on mobile */
+            }
+
+            .arch__right .img-wrapper img {
+                object-position: 0px 60% !important; /* Ensure initial object position on mobile */
+            }
+
+            .arch__left .arch__info {
+                height: auto;
+                padding: 20px 0;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .arch {
+                gap: 12px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .arch__right .img-wrapper {
+                border-radius: 10px;
+                height: 280px;
+            }
+        }
+    </style>
+    <link href="https://fonts.bunny.net/css?family=jura:300,500" rel="stylesheet">
+    <style>
+    /* CSS Variables & Base Styles */
+    .carousel-section-wrapper {
+        background-color: #FFF;
+        color: rgb(10, 10, 10);
+        padding: 2rem;
+        font-family: "Jura", sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2rem;
+        width: 100%;
+    }
+
+    .carousel-section-wrapper h1 {
+        margin: 0;
+        font-size: 1.2rem;
+        text-align: center;
+    }
+    
+    :root {
+        --nav-btn-size: 40px;
+        --nav-btn-bg: rgb(15, 23, 43);
+        --nav-btn-txt: white;
+        --nav-marker-bg: rgb(15, 23, 43);
+        --snap-distance: 250px; /* Matches item width */
+    }
+
+    /* Message for Unsupported Features */
+    .msg-supports {
+        font-size: 0.8rem;
+        color: #d33;
+    }
+
+    /* --- CAROUSEL CONTAINER --- */
+    .carousel {
+        width: min(calc(100% - 2rem), 700px);
+        list-style: none;
+        padding-block: 2rem;
+        display: flex; /* Use flex to lay out items horizontally */
+        overflow-x: scroll;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        scrollbar-width: none; /* Hide scrollbar in Firefox */
+        margin-top: 2rem;
+        position: relative;
+        
+        /* Hide scrollbar in Chrome/Safari */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    .carousel::-webkit-scrollbar {
+        display: none;
+    }
+    
+    /* Empty elements to center first and last items (using padding) */
+    .carousel::before,
+    .carousel::after {
+        content: '';
+        flex-shrink: 0;
+        width: calc(50% - (var(--snap-distance) / 2));
+    }
+
+    /* --- CAROUSEL ITEM --- */
+    .carousel > div {
+        flex-shrink: 0;
+        width: var(--snap-distance);
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+        
+        display: grid;
+        grid-template-areas: 'img' 'title' 'desc';
+        text-align: center;
+        padding: 0 1rem;
+        transition: all 300ms ease-in-out;
+        
+        /* Initial state for text/image scaling when not active */
+        --scale-factor: 0.5;
+        --opacity-factor: 0.5;
+    }
+
+    /* Active state for snapped item (Set by JavaScript) */
+    .carousel > div.is-active {
+        --scale-factor: 1;
+        --opacity-factor: 1;
+    }
+
+    /* Item Title/Name */
+    .carousel > div h2 {
+        grid-area: title;
+        margin: 1rem 0 0 0;
+        font-size: 1.3rem;
+        white-space: nowrap;
+        transition: all 300ms ease-in-out;
+        scale: var(--scale-factor);
+        opacity: var(--opacity-factor);
+        translate: 0 calc(var(--scale-factor) * -100px);
+    }
+
+    /* Item Description */
+    .carousel > div p {
+        grid-area: desc;
+        margin: 0;
+        white-space: nowrap;
+        transition: all 300ms ease-in-out;
+        scale: var(--scale-factor);
+        opacity: calc(var(--opacity-factor) - 0.5); /* Hide/fade out more aggressively */
+    }
+    .carousel > div.is-active p {
+        opacity: 1;
+    }
+
+
+    /* Image Wrapper */
+    .carousel > div .img {
+        grid-area: img;
+        width: 100%;
+        aspect-ratio: 3/4;
+        transition: all 300ms ease-in-out;
+        transform-origin: center center;
+        scale: var(--scale-factor);
+        opacity: var(--opacity-factor);
+    }
+
+    .carousel > div .img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 20px;
+        box-shadow: 0 10px 20px rgba(0 0 0 / .25);
+    }
+
+    /* --- NAVIGATION DOTS (JS Generated) --- */
+    .carousel-nav {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    .carousel-dot {
+        height: 15px;
+        width: 15px;
+        background-color: var(--nav-marker-bg);
+        border-radius: 50%;
+        opacity: 0.25;
+        cursor: pointer;
+        transition: all 150ms ease-in-out;
+        border: 2px solid transparent;
+    }
+    .carousel-dot.is-active {
+        opacity: 1;
+        scale: 1.1;
+    }
+    .carousel-dot:hover {
+        opacity: 0.8;
+    }
+    .carousel-dot:focus-visible {
+        border-color: var(--nav-marker-bg);
+        outline: none;
+    }
+
+    /* --- MEDIA QUERIES (Handling the fluid item width) --- */
+    @media (max-width: 700px) {
+        .carousel {
+            /* On smaller screens, use a percentage of viewport width for item sizing */
+            grid-auto-columns: 80vw;
+            --snap-distance: 80vw;
+        }
+    }
+    
+    @media (max-width: 500px) {
+        .carousel {
+             grid-auto-columns: 90vw;
+             --snap-distance: 90vw;
+        }
+    }
+</style>
+    <style>
+    @import url(https://fonts.bunny.net/css?family=caveat:400) layer(demo);
+
+    @layer demo {
+      .profiles{
+        --size: 200px;
+        --img-clip: "M 0 -50 L 200 -50 L 200 150 C 100 150 0 250 0 150 Z"; /* unfortunatly it isn't possible (as far as I know) to use custom properties in clip paths */
+        --img-shadow: drop-shadow(5px 5px 2px rgba(0 0 0 / 0.5));
+        --name-txt-clr: #EEE;
+        --bg-clr: steelblue;  /* only displayed if no background image defined */
+        --bg-blur: 0;         /* background image default blur */
+        --bg-blur-hover: 20px; /* background image blur on hover */
+
+        font-family: 'Caveat', handwriting;
+        display: grid;
+        grid-template-columns: repeat(var(--grid-cols,1),var(--size));
+        gap: 2rem;
+        margin: 20vh auto;
+        width: fit-content;
+        justify-items: center;
+      }
+      @media (min-width: 500px){
+        .profiles{
+          --grid-cols: 2 ;
+        }
+      }
+      @media (min-width: 860px){
+        .profiles{
+          --grid-cols: 4 ;
+        }
+      }
+      .avatar{
+        position: relative;
+        width: var(--size);
+        height: var(--size); /* for older browsers */
+        aspect-ratio: 1;
+      }
+      .avatar-img {
+        clip-path: path("M 0 -50 L 200 -50 L 200 150 C 100 150 0 250 0 150 Z");
+      }
+
+      .avatar-img::before{
+        content: '';
+        position: absolute;
+        display: block;
+        inset: 50% 0 0 0;
+        z-index: -1;
+        border-radius: 20px;
+        background-color: var(--bg-clr); /* fallback if image not defined as custom property */
+        background-image: var(--bg-img);
+        background-size: cover;
+        background-position: center;
+        filter: blur(var(--bg-blur));
+        transition: filter 300ms ease-in-out;
+      }
+      .avatar-img > img{
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Changed to contain to see the whole icon */
+        transition: scale 300ms, filter 300ms;
+        transform-origin: bottom;
+        scale: var(--img-scale, .9);
+        filter: var(--img-shadow);
+        padding: 20px; /* Add some padding so icons are not clipped */
+        box-sizing: border-box;
+      }
+
+      .avatar > p{
+        font-size: 1.4rem;
+        color: #000;
+        
+        position: absolute;
+        bottom: -1rem;
+        right: .25rem;
+        translate: 0 var(--name-y,-50px);
+        opacity: var(--name-opacity,0);
+        z-index: -1;
+        transition-name: translate, opacity;
+        transition-delay: 150ms;
+        transition-duration: 300ms;
+        transition-timing-function: cubic-bezier(0.47, 1.64, 0.41, 0.8), ease-in-out;
+      }
+
+      /* all hover effects as custom properties */
+      .avatar:hover{
+        --img-scale: 1.1;
+        --img-shadow: drop-shadow(10px 15px 4px rgba(0 0 0 / 0.5));
+        --name-y: 0;
+        --name-opacity: 1;
+        --bg-blur: var(--bg-blur-hover);
+      }
+    }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    .social {
+      display: flex;
+      justify-content: center;
+      flex-flow: wrap;
+      gap: 1rem;
+      list-style: none;
+      padding: 0;
+    }
+
+    .social li {
+      position: relative;
+      flex-basis: 4.5rem;
+    }
+
+    .social li::after {
+      position: absolute;
+      content: attr(data-tooltip);
+      inset: -45% auto auto 50%;
+      z-index: 10;
+      translate: -50%;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      color: #fff;
+      background: var(--bg, #070707);
+      border-radius: 0.25rem;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: inset 0.4s cubic-bezier(0.47, 2, 0.41, 1.5),
+        visibility 0.3s ease-in-out, opacity 0.2s ease-in-out;
+    }
+
+    .social li:has(a:hover, a:focus-visible)::after {
+      opacity: 1;
+      visibility: visible;
+      inset-block-start: -60%;
+    }
+
+    .social a {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      aspect-ratio: 1;
+      font-size: 1.75rem;
+      color: #070707;
+      border: 1px solid;
+      border-radius: 100%;
+      text-decoration: none;
+      outline: none;
+      overflow: hidden;
+      transition: color 0.3s ease-in-out;
+    }
+
+    .social a > i { /* Changed back to i */
+      position: relative;
+      z-index: 1;
+    }
+
+    .social a::after {
+      position: absolute;
+      content: "";
+      inset: 100% 0 0;
+      background: var(--bg, #070707);
+      pointer-events: none;
+      transition: inset 0.3s ease-in-out;
+    }
+
+    .social a:hover,
+    .social a:focus-visible {
+      color: #fff;
+    }
+
+    .social a:hover::after,
+    .social a:focus-visible::after {
+      inset-block-start: 0;
+    }
+
+    #back-to-top-btn.show-btn {
+        opacity: 1;
+        pointer-events: auto;
+    }
+</style>
+</head>
+<body class="min-h-screen">
+
+    <div id="smooth-wrapper">
+        <div id="smooth-content">
+
+    <!-- Main Container - Padding for edges -->
+    <div class="max-w-7xl mx-auto ">
+
+        <!-- 1. Navigation Bar -->
+        <header class="sticky top-0 z-50 bg-white flex items-center justify-between h-20 border-b border-gray-100 position: fixed">
+            <!-- Logo -->
+            <a href="index.html" class="flex items-center s">
+                <!-- Simple Logo: M + Tree icon/shape -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+                    <path d="M12 2L10 6L14 6L12 2Z" fill="#1a1a1a"/>
+                    <path d="M12 8C10 8 9 10 9 12C9 14 10 16 12 16C14 16 15 14 15 12C15 10 14 8 12 8Z" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 16V22" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="text-xl font-bold">P.dev</span>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden lg:flex space-x-8 items-center text-sm font-medium">
+                <a href="#" class="text-green-600 hover:text-green-600 transition duration-150">About me</a>
+                <a href="#my-pro" class="text-gray-700 hover:text-green-600 transition duration-150">My projects</a>
+                <a href="#skill" class="text-gray-700 hover:text-green-600 transition duration-150">Skills</a>
+                <a href="#contact" class="text-gray-700 hover:text-green-600 transition duration-150">Contact me</a>
+            </nav>
+
+            <!-- Actions -->
+            <div class="flex items-center space-x-4">
+                <a href="mailto:paremeshwersuthar@gmail.com" class="hidden sm:inline-block border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition duration-150">
+                    Mail me 
+                </a>
+                
+            </div>
+        </header>
+
+    </div>
+
+    <main>
+        <div class="zoom-container">
+            <h1 class="heading">
+                Hyy, Everyone<br />
+                Namaste
+            </h1>
+            <!-- Image elements with different data-layer values for varying zoom speeds/depths --><div class="zoom-item" data-layer="2">
+                <img src="assets/pic9.jpeg" alt="Diverse group of friends">
+            </div>
+            <div class="zoom-item" data-layer="2">
+                <img src="assets/pic8.jpeg" alt="Man celebrating a new car" />
+            </div>
+            <div class="zoom-item" data-layer="1">
+                <img src="assets/pic6.jpeg" alt="Man standing in front of a modern house" />
+            </div>
+            <div class="zoom-item" data-layer="2">
+                <img src="assets/pic4.jpeg" alt="Couple relaxing in a modern home" />
+            </div>
+            <div class="zoom-item" data-layer="3">
+                <img src="assets/pic5.jpeg" alt="Business professional in a career setting" />
+            </div>
+            <div class="zoom-item" data-layer="1">
+                <img src="assets/pic3.jpeg" alt="A doctor talking to a patient" />
+            </div>
+            <div class="zoom-item" data-layer="3">
+                <img src="assets/pic8.jpeg" alt="Students working together" />
+            </div>
+            <div class="zoom-item" data-layer="3">
+                <img src="assets/pic2.jpeg" alt="Traditional Indian festival/portrait" />
+            </div>
+            <div class="zoom-item" data-layer="1">
+                <img src="assets/pic1.jpeg" alt="People celebrating a cultural event" />
+            </div>
+            <div class="zoom-item" data-layer="3">
+                <img src="assets/pic11.jpeg" alt="Portrait of an Indian woman" />
+            </div>
+            <div class="zoom-item" data-layer="2">
+                <img src="assets/pic10.jpeg" alt="Factory worker using machinery" />
+            </div>
+            <div class="zoom-item" data-layer="1">
+                <img src="assets/pic7.jpeg" alt="Person walking through a crowd" />
+            </div>
+        </div>
+
+        <!-- Second section with the text reveal effect --><section class="section-stick min-h-screen bg-white flex justify-center items-center text-black p-8">
+            <p class="opacity-reveal text-4xl sm:text-5xl md:text-7xl font-bold text-center w-full md:w-3/5">
+                It's Paremeshwer suthar, i am front-end Developer , I build things for the web.
+            </p>
+        </section>
+        
+       
+<div class="container" id="my-pro">
+    <h2 class="text-4xl font-bold text-center mb-12">My Projects</h2>
+   
+    <div class="arch">
+        
+        <!-- LEFT COLUMN: Text Content -->
+        <div class="arch__left">
+            <!-- Arch 1: OUR STORY -->
+            <div class="arch__info" id="green-arch">
+                <div class="content">
+                    <h2 class="header">TRIOTECH</h2>
+                    <p class="desc">A profational and complete clint project TRIOTECH , a hiring or job providing firms website, with versatile desine and beautyfull theam .</p>
+                    <a class="link" href="https://github.com/sutharparemeshwer-ai/triotechsolutions" style="background-color: #D5FF37">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none">
+                            <path fill="#121212" d="M5 2c0 1.105-1.895 2-3 2a2 2 0 1 1 0-4c1.105 0 3 .895 3 2ZM11 3.5c0 1.105-.895 3-2 3s-2-1.895-2-3a2 2 0 1 1 4 0ZM6 9a2 2 0 1 1-4 0c0-1.105.895-3 2-3s2 1.895 2 3Z" />
+                        </svg> <span>source code</span></a>
+                </div>
+            </div>
+
+            <!-- Arch 2: OUR MISSION -->
+            <div class="arch__info" id="blue-arch">
+                <div class="content">
+                    <h2 class="header">TOOLVERS</h2>
+                    <p class="desc">A versatile collection of over 170 online tools, providing solutions for various daily tasks in one convenient place. with tools, games, ai tools</p>
+                    <a class="link" href="https://github.com/sutharparemeshwer-ai/Toolvers" style="background-color: #7DD6FF">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none">
+                            <path fill="#121212" d="M5 2c0 1.105-1.895 2-3 2a2 2 0 1 1 0-4c1.105 0 3 .895 3 2ZM11 3.5c0 1.105-.895 3-2 3s-2-1.895-2-3a2 2 0 1 1 4 0ZM6 9a2 2 0 1 1-4 0c0-1.105.895-3 2-3s2 1.895 2 3Z" />
+                        </svg> <span>source code</span></a>
+                </div>
+            </div>
+
+            <!-- Arch 3: Innovative Solutions (Kept Same) -->
+            <div class="arch__info" id="pink-arch">
+                <div class="content">
+                    <h2 class="header">ZOMATO WEBPAGE CLONE</h2>
+                    <p class="desc">A profationaly crafted web page clone , its clone of zomato.com with beautyfull GSAP anemations and well desine.</p>
+                    <a class="link" href="https://github.com/sutharparemeshwer-ai/zomato.com-webpage-clone" style="background-color: #FFA0B0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none">
+                            <path fill="#121212" d="M5 2c0 1.105-1.895 2-3 2a2 2 0 1 1 0-4c1.105 0 3 .895 3 2ZM11 3.5c0 1.105-.895 3-2 3s-2-1.895-2-3a2 2 0 1 1 4 0ZM6 9a2 2 0 1 1-4 0c0-1.105.895-3 2-3s2 1.895 2 3Z" />
+                        </svg> <span>source code</span></a>
+                </div>
+            </div>
+
+            <!-- Arch 4: Comprehensive Overview (Kept Same) -->
+            <div class="arch__info" id="orange-arch">
+                <div class="content">
+                    <h2 class="header">COLOUR PICKER EXTANTION</h2>
+                    <p class="desc">An extantion which allow you to pick colours from any webpage you want and also give 3 kinds of pallate related to picked colour</p>
+                    <a class="link" href="https://github.com/sutharparemeshwer-ai/colour-picker-extantion" style="background-color: #FFA17B">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none">
+                            <path fill="#121212" d="M5 2c0 1.105-1.895 2-3 2a2 2 0 1 1 0-4c1.105 0 3 .895 3 2ZM11 3.5c0 1.105-.895 3-2 3s-2-1.895-2-3a2 2 0 1 1 4 0ZM6 9a2 2 0 1 1-4 0c0-1.105.895-3 2-3s2 1.895 2 3Z" />
+                        </svg> <span>source code</span></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Pinned Images -->
+        <div class="arch__right">
+            <!-- data-index="4" (Maps to OUR STORY) - User's Image 1 -->
+            <div class="img-wrapper" data-index="4">
+                <img src="assets/triotech.png" alt="Legacy team members collaboration">
+            </div>
+
+            <!-- data-index="3" (Maps to OUR MISSION) - User's Image 2 -->
+            <div class="img-wrapper" data-index="3">
+                <img src="assets/tollvers.png" alt="Executive management team meeting">
+            </div>
+
+            <!-- data-index="2" (Maps to Innovative Solutions) - User's Image 3 (KEPT) -->
+            <div class="img-wrapper" data-index="2">
+                <img src="assets/zomato.png" alt="Abstract fluid architecture design">
+            </div>
+
+            <!-- data-index="1" (Maps to Comprehensive Overview) - User's Image 4 -->
+            <div class="img-wrapper" data-index="1">
+                <img src="https://static-cse.canva.com/blob/1145301/image35.jpg" alt="Company office wide overview shot">
+            </div>
+        </div>
+    </div>
+
+    <div class="spacer"></div>
+</div>
+
+<section class="profiles" id="skill">
+  <h2 class="text-4xl font-bold text-center mb-12" style="grid-column: 1 / -1; color: #1a1a1a;">My Skills</h2>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg">
+    </div>
+    <p>HTML</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg">
+    </div>
+    <p>CSS</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg">
+    </div>
+    <p>JavaScript</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg">
+    </div>
+    <p>React</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://cdn.worldvectorlogo.com/logos/github-icon-2.svg">
+    </div>
+    <p>github</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Bootstrap_logo.svg/2560px-Bootstrap_logo.svg.png" >
+    </div>
+    <p>bootstrap</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQByoSnFz-nb2dn0GTzQZSuSnr6PpgQFNfkPg&s">
+    </div>
+    <p>GSAP</p>
+  </div>
+  <div class="avatar" style="--bg-img:url(https://picsum.photos/id/54/300/200)">
+    <div class="avatar-img">
+      <img src="https://git-scm.com/images/logos/logomark-orange@2x.png">
+    </div>
+    <p>Git</p>
+  </div>
+</section>
+
+<section class="contact-me rounded-lg p-8 my-20" id="contact">
+    <div class="text-center">
+        <h2 class="text-4xl font-bold mb-8">Contact Me</h2>
+    </div>
+    <div class="grid md:grid-cols-2">
+        <div class="text-center">
+            <h3 class="text-2xl font-semibold text-gray-600 mb-4">Quick Links</h3>
+            <ul class="social">
+                <li data-tooltip="GitHub" style="--bg: #181717">
+                    <a href="https://github.com/sutharparemeshwer-ai" aria-label="GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                </li>
+                <li data-tooltip="LinkedIn" style="--bg: #0A66C2">
+                    <a href="https://www.linkedin.com/in/paremeshwer-suthar-04b515388/" aria-label="LinkedIn">
+                        <i class="fa-brands fa-linkedin"></i>
+                    </a>
+                </li>
+                <li data-tooltip="Twitter" style="--bg: #1DA1F2">
+                    <a href="https://x.com/ParemeshwerS" aria-label="Twitter">
+                        <i class="fa-brands fa-twitter"></i>
+                    </a>
+                </li>
+                <li data-tooltip="Instagram" style="--bg: linear-gradient(-45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5)">
+                    <a href="https://www.instagram.com/mai_paremeshwer_hoon/" aria-label="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                </li>
+                <li data-tooltip="Email" style="--bg: #c71610">
+                    <a href="mailto:paremeshwersuthar@gmail.com" aria-label="Email">
+                        <i class="fa-solid fa-envelope"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="text-center">
+            <h3 class="text-2xl font-semibold text-gray-600 mb-4">Contact Information</h3>
+            <div class="contact-info text-lg text-gray-700 space-y-2">
+                <p><strong>Phone:</strong> +91 9769790161</p>
+                <p><strong>Email:</strong> sutharparemeshwer@gmail.com</p>
+                <p><strong>Address:</strong> kalu bas , shri dungargarh, bikaner, rajasthan, 331803</p>
+            </div>
+        </div>
+    </div>
+</section>
+    
+
+  
+
+    
+  
+    <!-- Navigation Markers (Dots) container -->
+    <div class="carousel-nav" id="carouselNav"></div>
+</main>
+    <a href="#" id="back-to-top-btn" class="fixed bottom-8 right-8 bg-green-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-green-700 transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+        <i class="fa-solid fa-arrow-up"></i>
+    </a>
+    <footer class="bg-white text-black mt-40">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            
+            <div class="mt-8 border-t border-gray-200 pt-8 md:flex md:items-center md:justify-between">
+                <p class="text-base text-gray-400">&copy; 2025 social. All rights reserved.</p>
+            </div>
+        </div>
+        </footer>
+    
+    
+</div>
+
+    </div>
+    </div>
+    
+    <script>
+        // --- MANUAL TEXT SPLIT FUNCTION ---
+        /**
+         * Manually splits the text content of an element into character spans.
+         * @param {string} selector - The CSS selector for the element to split.
+         * @returns {HTMLElement[] | null} An array of the new character spans, or null if the element isn't found.
+         */
+        function manualSplitText(selector) {
+            const element = document.querySelector(selector);
+            if (!element) return null;
+
+            const text = element.textContent;
+            let newHTML = '';
+            
+            // Iterate over each character and wrap it in a span
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                if (char === ' ') {
+                    // Use a span containing a non-breaking space for spaces
+                    newHTML += '<span>&nbsp;</span>'; 
+                } else {
+                    // Wrap the character
+                    newHTML += `<span class="split-char">${char}</span>`;
+                }
+            }
+            
+            // Replace the original text with the wrapped characters
+            element.innerHTML = newHTML;
+            
+            // Return the array of new character spans for GSAP targeting
+            return Array.from(element.querySelectorAll('.split-char, span'));
+        }
+
+        // --- GSAP INITIALIZATION ---
+        
+        // 0. Register GSAP plugins conditionally (excluding SplitText)
+        const plugins = [];
+        if (typeof ScrollTrigger !== 'undefined') plugins.push(ScrollTrigger);
+        if (typeof ScrollSmoother !== 'undefined') plugins.push(ScrollSmoother);
+
+        if (plugins.length > 0) {
+            gsap.registerPlugin(...plugins);
+        }
+
+        // 1. Initialize ScrollSmoother for a luxurious scroll feeling
+        if (typeof ScrollSmoother !== 'undefined') {
+            ScrollSmoother.create({
+                smooth: 1.2,
+                effects: true,
+                normalizeScroll: true,
+                wrapper: '#smooth-wrapper',
+                content: '#smooth-content',
+            });
+        }
+
+        // 2. Timeline for the Perspective Zoom Effect
+        if (typeof ScrollTrigger !== 'undefined') {
+            gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".zoom-container",
+                    start: "top top",
+                    end: "bottom top", 
+                    pin: true,
+                    scrub: 1
+                }
+            })
+            .to(
+                ".zoom-item[data-layer='3']",
+                {
+                    opacity: 1,
+                    z: 800,
+                    ease: "power1.out"
+                },
+                0
+            )
+            .to(
+                ".zoom-item[data-layer='2']",
+                {
+                    opacity: 1,
+                    z: 600,
+                    ease: "power1.out"
+                },
+                0
+            )
+            .to(
+                ".zoom-item[data-layer='1']",
+                {
+                    opacity: 1,
+                    z: 400,
+                    ease: "power1.out"
+                },
+                0
+            )
+            .to(
+                ".heading",
+                {
+                    opacity: 1,
+                    z: 50,
+                    ease: "power1.inOut"
+                },
+                0
+            );
+        }
+
+        // 3. Manual Text Split and Reveal Effect
+        const splitChars = manualSplitText(".opacity-reveal");
+
+        if (splitChars && typeof ScrollTrigger !== 'undefined') {
+            // Set the initial state of the characters to low opacity
+            gsap.set(splitChars, { opacity: "0.2" });
+
+            gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".section-stick",
+                    pin: true,
+                    start: "center center",
+                    end: "+=1500",
+                    scrub: 1
+                }
+            })
+            // Reveal the text character by character
+            .to(splitChars, {
+                opacity: "1",
+                color: "#059669",
+                duration: 1,
+                ease: "none",
+                stagger: 0.05, // Adjusted stagger timing
+            })
+            // Hold the revealed text visible for a scroll duration
+            .to({}, { duration: 10 })
+            // Fade out and slightly scale the revealed text towards the end of the scroll trigger
+            .to(".opacity-reveal", {
+            opacity: "0",
+            scale: 1.2,
+            duration: 5,
+        });
+    }
+
+    // --- ARCH SECTION SCRIPT ---
+    // Set z-index for images (Data-index 4 is highest, 1 is lowest)
+    document.querySelectorAll(".arch__right .img-wrapper").forEach((element) => {
+        const order = element.getAttribute("data-index");
+        if (order !== null) {
+            element.style.zIndex = order;
+        }
+    });
+
+    // Mobile layout handler: Interleave text and images on small screens
+    function handleMobileLayout() {
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        const leftItems = gsap.utils.toArray(".arch__left .arch__info");
+        const rightItems = gsap.utils.toArray(".arch__right .img-wrapper");
+
+        if (isMobile) {
+            // Interleave items using CSS order property: [Text 1, Image 1, Text 2, Image 2, ...]
+            leftItems.forEach((item, i) => {
+                item.style.order = i * 2;
+            });
+            rightItems.forEach((item, i) => {
+                item.style.order = i * 2 + 1;
+            });
+        } else {
+            // Clear order for desktop to maintain flex-box layout
+            leftItems.forEach((item) => {
+                item.style.order = "";
+            });
+            rightItems.forEach((item) => {
+                item.style.order = "";
+            });
+        }
+    }
+
+    // Debounce resize for performance
+    let resizeTimeout;
+    window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(handleMobileLayout, 100);
+    });
+
+    // Run on initial load
+    handleMobileLayout();
+
+    const imgs = gsap.utils.toArray(".img-wrapper img");
+    // Background colors for the body corresponding to each section (starts with #f9ffe7 - green theme)
+    // Transition colors: Section 1->2, 2->3, 3->4
+    // Changed the last color (index 2) to pure white (#FFFFFF) for the 4th section.
+    const bgColors = ["#EDF9FF", "#FFECF2", "#FFFFFF"];
+
+    // GSAP Animation with Media Query matching
+    ScrollTrigger.matchMedia({
+        // DESKTOP animation (Pinning + ClipPath/ObjectPosition)
+        "(min-width: 769px)": function () {
+            // Main timeline for the entire scroll section
+            const mainTimeline = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".arch",
+                    start: "top top",
+                    end: "bottom bottom",
+                    pin: ".arch__right", // Pin the image container
+                    scrub: true
+                }
+            });
+
+            // Set initial state for all images: visible (clipPath: inset(0))
+            gsap.set(imgs, {
+                clipPath: "inset(0)",
+                objectPosition: "0px 0%"
+            });
+
+            // Loop through the text sections to define transitions
+            gsap.utils.toArray(".arch__left .arch__info").forEach((section, index) => {
+                const currentImage = imgs[index];
+                const nextImage = imgs[index + 1]; // Next image to reveal/unmask
+                const currentSectionTimeline = gsap.timeline();
+
+                if (nextImage) {
+                    currentSectionTimeline
+                        // 1. Change body background color smoothly
+                        .to(
+                            "body",
+                            {
+                                backgroundColor: bgColors[index],
+                                duration: 1.5,
+                                ease: "power2.inOut"
+                            },
+                            0
+                        )
+                        // 2. Hide the current image by clipping it from bottom up
+                        .to(
+                            currentImage,
+                            {
+                                clipPath: "inset(0px 0px 100%)",
+                                objectPosition: "0px 60%", // Subtle image movement during transition
+                                duration: 1.5,
+                                ease: "none"
+                            },
+                            0
+                        )
+                        // 3. Move the next image's object position slightly for effect
+                        .to(
+                            nextImage,
+                            {
+                                objectPosition: "0px 40%",
+                                duration: 1.5,
+                                ease: "none"
+                            },
+                            0
+                        );
+                }
+
+                // Add a space at the end of the timeline section
+                currentSectionTimeline.to({}, { duration: 0.5 });
+                
+                mainTimeline.add(currentSectionTimeline);
+            });
+        },
+
+        // MOBILE animation (No Pinning, simple background/image scroll effect)
+        "(max-width: 768px)": function () {
+            // Reset clipPath for mobile, handled by CSS media query, but ensure GSAP doesn't override it.
+            gsap.set(imgs, {
+                clipPath: "none",
+                objectPosition: "0px 60%"
+            });
+            
+            // Timeline for smooth color transitions on mobile
+            gsap.utils.toArray(".arch__left .arch__info").forEach((infoSection, index) => {
+                const image = imgs[index];
+                const colorIndex = index;
+
+                if (image) {
+                    gsap.timeline({
+                        scrollTrigger: {
+                            trigger: image, // Trigger animation based on the image entering the viewport
+                            start: "top center",
+                            end: "bottom center",
+                            scrub: true
+                        }
+                    })
+                    .to(image, {
+                        objectPosition: "0px 30%", // Slight movement while scrolling past
+                        duration: 5,
+                        ease: "none"
+                    });
+                }
+
+                if (colorIndex < bgColors.length) {
+                     gsap.to("body", {
+                        backgroundColor: bgColors[colorIndex],
+                        duration: 0.5,
+                        ease: "power2.inOut",
+                        scrollTrigger: {
+                            trigger: infoSection,
+                            start: "top center",
+                            end: "center center",
+                            toggleActions: "play reverse play reverse"
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    // --- CAROUSEL SCRIPT ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const carousel = document.getElementById('teamCarousel');
+        if (!carousel) return; // Do not run if the carousel is not on the page
+        const navContainer = document.getElementById('carouselNav');
+        const items = Array.from(carousel.children).filter(child => child.tagName === 'DIV');
+        let itemWidth = 0;
+        let activeIndex = 0;
+
+        // --- 1. Create Navigation Dots ---
+        items.forEach((_, index) => {
+            const dot = document.createElement('button');
+            dot.classList.add('carousel-dot');
+            dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+            dot.dataset.index = index;
+            dot.addEventListener('click', () => {
+                // Calculate the scroll position needed to center the item
+                const scrollPosition = (index * itemWidth) - (carousel.clientWidth / 2) + (itemWidth / 2);
+                carousel.scrollTo({
+                    left: scrollPosition,
+                    behavior: 'smooth'
+                });
+            });
+            navContainer.appendChild(dot);
+        });
+
+        const dots = Array.from(navContainer.children);
+
+        // --- 2. Scroll-to-Start Item (Mimicking scroll-initial-target) ---
+        const startItem = carousel.querySelector('.scroll-start');
+        if (startItem) {
+            const startIndex = items.indexOf(startItem);
+            
+            // Wait for layout to settle before calculating width and scrolling
+            window.addEventListener('load', () => {
+                updateItemWidth();
+                // Scroll to center the initial item
+                const scrollPosition = (startIndex * itemWidth) - (carousel.clientWidth / 2) + (itemWidth / 2);
+                carousel.scrollLeft = scrollPosition;
+                // Run the update function immediately to set initial active state
+                updateActiveItem();
+            });
+        }
+
+        // --- 3. Intersection Observer to Detect Active Item (Simulates @container scroll-state) ---
+        const observerOptions = {
+            root: carousel,
+            rootMargin: '0px',
+            // Threshold close to 1.0 ensures the element is perfectly centered
+            // We use a custom threshold slightly less than 1.0 to ensure the center snap works.
+            threshold: [0.98] 
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const item = entry.target;
+                const index = items.indexOf(item);
+                
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.98) {
+                    // Item is snapped/centered
+                    item.classList.add('is-active');
+                    dots[index].classList.add('is-active');
+                    activeIndex = index;
+                } else {
+                    // Item is not snapped/centered
+                    item.classList.remove('is-active');
+                    dots[index].classList.remove('is-active');
+                }
+            });
+        }, observerOptions);
+
+        items.forEach(item => observer.observe(item));
+
+
+        // --- 4. Helper Function to Get Dynamic Item Width ---
+        function updateItemWidth() {
+            // Get the calculated width of the first item (should be the same for all)
+            if (items.length > 0) {
+                // Use getBoundingClientRect().width or offsetWidth
+                itemWidth = items[0].offsetWidth; 
+                // Fallback using computed style if needed, but offsetWidth is usually sufficient
+                if (itemWidth === 0) {
+                    itemWidth = parseFloat(window.getComputedStyle(items[0]).width);
+                }
+                // Update CSS variable for scroll calculation
+                document.documentElement.style.setProperty('--snap-distance', `${itemWidth}px`);
+            }
+        }
+        
+        // Initial calculation and listener for responsiveness
+        updateItemWidth();
+        window.addEventListener('resize', updateItemWidth);
+
+        // --- 5. Manual Fallback Scroll Listener (for faster active state update during interaction) ---
+        // This is less reliable than the IntersectionObserver for centering, 
+        // but provides immediate feedback during scroll gestures.
+        function updateActiveItem() {
+             if (itemWidth === 0) return;
+             // Calculate the index of the item closest to the center
+             const scrollCenter = carousel.scrollLeft + (carousel.clientWidth / 2);
+             let closestIndex = Math.round(scrollCenter / itemWidth) - 1;
+
+             // Clamp index between 0 and last item index
+             closestIndex = Math.max(0, Math.min(items.length - 1, closestIndex));
+             
+             if (closestIndex !== activeIndex) {
+                // Manually trigger the active state update if IO hasn't caught up
+                items.forEach((item, i) => {
+                    item.classList.toggle('is-active', i === closestIndex);
+                    dots[i].classList.toggle('is-active', i === closestIndex);
+                });
+                activeIndex = closestIndex;
+             }
+        }
+
+        // Throttle the scroll event for performance
+        let isScrolling;
+        carousel.addEventListener('scroll', () => {
+            window.clearTimeout(isScrolling);
+            isScrolling = setTimeout(updateActiveItem, 66); // 66ms delay = ~15FPS
+        });
+
+        
+        // --- GSAP Animation for Skills Section ---
+        if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+            gsap.from(".profiles .avatar", {
+                scrollTrigger: {
+                    trigger: ".profiles",
+                    start: "top 80%",
+                    toggleActions: "play none none none",
+                },
+                opacity: 0,
+                y: 50,
+                duration: 0.5,
+                stagger: 0.2,
+                ease: "power3.out",
+            });
+        }
+
+        // --- GSAP Animation for Contact Section ---
+        if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+            const contactTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".contact-me",
+                    start: "top 80%",
+                    toggleActions: "play none none none",
+                }
+            });
+
+            contactTl.from(".contact-me h2", { opacity: 0, y: 50, duration: 0.5 })
+                     .from(".contact-me .grid > div", { opacity: 0, y: 50, duration: 0.5, stagger: 0.2 }, "-=0.2");
+        }
+
+        // --- Back to Top Button ---
+        const backToTopBtn = document.getElementById('back-to-top-btn');
+        if (backToTopBtn) {
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    backToTopBtn.classList.add('show-btn');
+                } else {
+                    backToTopBtn.classList.remove('show-btn');
+                }
+            });
+
+            backToTopBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        }
+        
+    });
+    </script>
+
+</body>
+</html>
